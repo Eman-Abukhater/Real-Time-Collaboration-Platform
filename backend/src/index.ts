@@ -58,11 +58,19 @@ async function startServer() {
     // Notify others that this user is online
     socket.broadcast.emit("user-online", userId);
   
+    // Typing indicator handler
+    socket.on("typing", (fromUserId) => {
+        console.log(`✍️ Received typing from ${fromUserId}`);
+        socket.broadcast.emit("typing", fromUserId);
+      });
+      
+  
     socket.on("disconnect", () => {
       console.log(`🔴 User ${userId} disconnected`);
       socket.broadcast.emit("user-offline", userId);
     });
   });
+  
   
 
   // Start server

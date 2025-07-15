@@ -26,13 +26,25 @@ const io = new Server(httpServer, {
   },
 });
 
-
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+      cb(null, path.join(__dirname, "../uploads"));
+    },
+    filename: function (req, file, cb) {
+      const uniqueName = Date.now() + "-" + file.originalname;
+      cb(null, uniqueName);
+    },
+  });
+  
+  const upload = multer({ storage });
 async function startServer() {
   const server = new ApolloServer({ typeDefs, resolvers });
   await server.start();
 
   app.use(cors());
   app.use(json());
+  app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+
 
   app.use("/graphql", expressMiddleware(server, {
     context: async ({ req }) => {
@@ -51,18 +63,9 @@ async function startServer() {
       return { user };
     }
   }));
-    const storage = multer.diskStorage({
-        destination: function (req, file, cb) {
-          cb(null, path.join(__dirname, "../uploads"));
-        },
-        filename: function (req, file, cb) {
-          const uniqueName = Date.now() + "-" + file.originalname;
-          cb(null, uniqueName);
-        },
-      });
+    
       
-      const upload = multer({ storage });
-      
+
 
   // Socket.IO logic
   io.on("connection", (socket) => {
@@ -85,7 +88,19 @@ async function startServer() {
       socket.broadcast.emit("user-offline", userId);
     });
   });
-  
+     // Serve static files from the uploads directory
+     app.post("/upload", upload.single("file"), (req, res) => {
+        if (!req.file) {
+          return res.status(400).json({ error: "No file uploaded" });
+        }
+      
+        return res.status(200).json({
+          message: "File uploaded successfully",
+          filename: req.file.filename,
+          path: `/uploads/${req.file.filename}`,
+        });
+      });
+      
   
 
   // Start server

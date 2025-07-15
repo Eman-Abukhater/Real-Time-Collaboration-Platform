@@ -65,8 +65,8 @@ async function startServer() {
 
   // Start server
   httpServer.listen(PORT, () => {
-    console.log(`🚀 GraphQL: http://localhost:${PORT}/graphql`);
-    console.log(`💬 Socket.IO running on port ${PORT}`);
+    console.log(`GraphQL: http://localhost:${PORT}/graphql`);
+    console.log(`Socket.IO running on port ${PORT}`);
   });
 }
 

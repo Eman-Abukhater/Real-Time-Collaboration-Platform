@@ -16,6 +16,7 @@ export const typeDefs = gql`
   type Query {
     hello: String
     me: User
+    adminSecret: String!
   }
 
   type Mutation {

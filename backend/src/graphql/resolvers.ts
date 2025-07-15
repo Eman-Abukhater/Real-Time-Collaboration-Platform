@@ -2,6 +2,7 @@ import { users, User } from "../models/user";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
+import { requireRole } from "../utils/auth";
 
 const SECRET = "supersecretkey"; // later from .env
 
@@ -10,7 +11,11 @@ export const resolvers = {
     hello: () => "Hello from GraphQL 🚀",
     me: (_: any, __: any, context: any) => {
       return context.user || null;
-    }
+    },
+    adminSecret: (_: any, __: any, context: any) => {
+        requireRole(context.user, ["Admin"]); //Only Admins allowed
+        return "🎉 This is top-secret admin content!";
+      }
   },
 
   Mutation: {

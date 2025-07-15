@@ -29,7 +29,7 @@ export const resolvers = {
         username,
         email,
         password: hashedPassword,
-        role: "User"
+        role:  "Admin"
       };
 
       users.push(newUser);

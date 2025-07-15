@@ -6,6 +6,8 @@ import dotenv from "dotenv";
 import { json } from "body-parser";
 import { typeDefs } from "./graphql/typeDefs";
 import { resolvers } from "./graphql/resolvers";
+import jwt from "jsonwebtoken";
+import { users } from "./models/user";
 
 dotenv.config();
 const app = express();
@@ -17,8 +19,23 @@ async function startServer() {
 
   app.use(cors());
   app.use(json());
-  app.use("/graphql", expressMiddleware(server));
-
+  app.use("/graphql", expressMiddleware(server, {
+    context: async ({ req }) => {
+      const token = req.headers.authorization?.split(" ")[1];
+      let user = null;
+  
+      if (token) {
+        try {
+          const decoded = jwt.verify(token, "supersecretkey") as { userId: string };
+          user = users.find(u => u.id === decoded.userId) || null;
+        } catch (err) {
+          user = null;
+        }
+      }
+  
+      return { user };
+    }
+  }));
   app.listen(PORT, () => {
     console.log(`🚀 Server running at http://localhost:${PORT}/graphql`);
   });

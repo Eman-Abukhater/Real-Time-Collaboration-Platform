@@ -51,17 +51,19 @@ async function startServer() {
 
   // Socket.IO logic
   io.on("connection", (socket) => {
-    console.log("A user connected:", socket.id);
-
-    socket.on("chat message", (msg) => {
-      console.log("Message received:", msg);
-      io.emit("chat message", msg); // Broadcast to all clients
-    });
-
+    const userId = socket.handshake.query.userId as string;
+  
+    console.log(`🟢 User ${userId} connected with socket ID: ${socket.id}`);
+  
+    // Notify others that this user is online
+    socket.broadcast.emit("user-online", userId);
+  
     socket.on("disconnect", () => {
-      console.log("A user disconnected:", socket.id);
+      console.log(`🔴 User ${userId} disconnected`);
+      socket.broadcast.emit("user-offline", userId);
     });
   });
+  
 
   // Start server
   httpServer.listen(PORT, () => {

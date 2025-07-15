@@ -10,6 +10,8 @@ import jwt from "jsonwebtoken";
 import { users } from "./models/user";
 import { createServer } from "http";
 import { Server } from "socket.io";
+import multer from "multer";
+import path from "path";
 
 dotenv.config();
 
@@ -23,6 +25,7 @@ const io = new Server(httpServer, {
     origin: "*",
   },
 });
+
 
 async function startServer() {
   const server = new ApolloServer({ typeDefs, resolvers });
@@ -48,6 +51,18 @@ async function startServer() {
       return { user };
     }
   }));
+    const storage = multer.diskStorage({
+        destination: function (req, file, cb) {
+          cb(null, path.join(__dirname, "../uploads"));
+        },
+        filename: function (req, file, cb) {
+          const uniqueName = Date.now() + "-" + file.originalname;
+          cb(null, uniqueName);
+        },
+      });
+      
+      const upload = multer({ storage });
+      
 
   // Socket.IO logic
   io.on("connection", (socket) => {

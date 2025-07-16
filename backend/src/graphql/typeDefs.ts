@@ -20,7 +20,9 @@ export const typeDefs = gql`
   }
 
   type Mutation {
-    register(username: String!, email: String!, password: String!): AuthPayload!
-    login(email: String!, password: String!): AuthPayload!
-  }
+  register(username: String!, email: String!, password: String!): AuthPayload!
+  login(email: String!, password: String!): AuthPayload!
+  uploadAvatar(userId: ID!, avatarUrl: String!): User! # ✅ Add this
+}
+
 `;

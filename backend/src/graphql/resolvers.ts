@@ -1,4 +1,4 @@
-import { User } from "../models/UserEntity";
+import { User } from "../entities/UserEntity";
 import { AppDataSource } from "../data-source";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -19,7 +19,7 @@ export const resolvers = {
     adminSecret: (_: any, __: any, context: any) => {
       requireRole(context.user, ["Admin"]);
       return "🎉 This is top-secret admin content!";
-    }
+    },
   },
 
   Mutation: {
@@ -37,7 +37,9 @@ export const resolvers = {
 
       await userRepo.save(newUser);
 
-      const token = jwt.sign({ userId: newUser.id }, SECRET, { expiresIn: "1d" });
+      const token = jwt.sign({ userId: newUser.id }, SECRET, {
+        expiresIn: "1d",
+      });
 
       return {
         token,
@@ -45,8 +47,8 @@ export const resolvers = {
           id: newUser.id,
           username: newUser.username,
           email: newUser.email,
-          role: newUser.role
-        }
+          role: newUser.role,
+        },
       };
     },
 
@@ -65,8 +67,8 @@ export const resolvers = {
           id: user.id,
           username: user.username,
           email: user.email,
-          role: user.role
-        }
+          role: user.role,
+        },
       };
     },
 
@@ -83,5 +85,5 @@ export const resolvers = {
 
       return user;
     },
-  }
+  },
 };

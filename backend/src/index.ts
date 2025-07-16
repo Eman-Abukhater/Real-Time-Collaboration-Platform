@@ -15,6 +15,7 @@ import path from "path";
 import fs from "fs";
 import { AppDataSource } from "./data-source";
 import { Message } from "./entities/Message";
+import { User } from "./entities/UserEntity";
 
 dotenv.config();
 
@@ -67,7 +68,7 @@ async function startServer() {
             const decoded = jwt.verify(token, "supersecretkey") as {
               userId: string;
             };
-            user = users.find((u) => u.id === decoded.userId) || null;
+            user = await userRepo.findOneBy({ id: decoded.userId });
           } catch (err) {
             user = null;
           }

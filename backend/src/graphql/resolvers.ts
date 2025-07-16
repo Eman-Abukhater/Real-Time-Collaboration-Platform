@@ -21,6 +21,12 @@ export const resolvers = {
       requireRole(context.user, ["Admin"]);
       return "🎉 This is top-secret admin content!";
     },
+    messages: async () => {
+      return await AppDataSource.getRepository(Message).find({
+        relations: ["sender"],
+        order: { createdAt: "ASC" }
+      });
+    }
   },
 
   Mutation: {
@@ -87,11 +93,6 @@ export const resolvers = {
       return user;
     },
 
-    messages: async () => {
-      return await AppDataSource.getRepository(Message).find({
-        relations: ["sender"],
-        order: { createdAt: "ASC" }
-      });
-    }
+    
   },
 };

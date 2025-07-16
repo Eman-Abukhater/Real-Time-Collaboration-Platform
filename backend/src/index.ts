@@ -29,7 +29,7 @@ const uploadsPath = path.join(__dirname, "../uploads");
 if (!fs.existsSync(uploadsPath)) {
   fs.mkdirSync(uploadsPath);
 }
-
+const onlineUsers = new Map<string, string>();
 // Multer configuration
 const storage = multer.diskStorage({
   destination: uploadsPath,
@@ -92,15 +92,38 @@ async function startServer() {
   io.on("connection", (socket) => {
     const userId = socket.handshake.query.userId as string;
     console.log(`User ${userId} connected with socket ID: ${socket.id}`);
-
+    if (!userId) {
+      console.log("Missing userId in connection");
+      return;
+    }
     socket.broadcast.emit("user-online", userId);
+    onlineUsers.set(userId, socket.id);
+    console.log(`${userId} connected`);
 
-    socket.on("typing", (fromUserId) => {
-      console.log(`✍️ ${fromUserId} is typing...`);
-      socket.broadcast.emit("typing", fromUserId);
+    // Notify all clients of updated online users
+    io.emit("online users", Array.from(onlineUsers.keys()));
+
+    socket.on("typing", async (userId: string) => {
+      const user = await userRepo.findOneBy({ id: userId });
+      if (user) {
+        socket.broadcast.emit("typing", user.username);
+      }
     });
+    socket.on("stop typing", async (userId: string) => {
+      const user = await userRepo.findOneBy({ id: userId });
+      if (user) {
+        socket.broadcast.emit("stop typing");
+      }
+    });
+
     socket.on("chat message", async (rawMsg: string) => {
       const userId = socket.handshake.query.userId as string;
+
+      if (!userId || userId === "null") {
+        console.warn("Missing or invalid userId in socket connection");
+        return;
+      }
+
       const user = await userRepo.findOneBy({ id: userId });
       if (!user) return;
 
@@ -111,12 +134,20 @@ async function startServer() {
 
       await messageRepo.save(msg);
 
-      // Emit to all users
-      io.emit("chat message", `[${user.username}] ${rawMsg}`);
+      io.emit("chat message", {
+        id: msg.id,
+        content: msg.content,
+        createdAt: msg.createdAt,
+        sender: {
+          username: user.username,
+        },
+      });
     });
+
     socket.on("disconnect", () => {
-      console.log(` User ${userId} disconnected`);
-      socket.broadcast.emit("user-offline", userId);
+      onlineUsers.delete(userId);
+      console.log(`${userId} disconnected`);
+      io.emit("online users", Array.from(onlineUsers.keys()));
     });
   });
 

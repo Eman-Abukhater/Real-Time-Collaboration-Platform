@@ -1,10 +1,12 @@
-import { users, User } from "../models/user";
+import { User } from "../models/UserEntity";
+import { AppDataSource } from "../data-source";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
 import { requireRole } from "../utils/auth";
 
-const SECRET = "supersecretkey"; // later from .env
+const SECRET = "supersecretkey"; 
+const userRepo = AppDataSource.getRepository(User);
 
 export const resolvers = {
   Query: {

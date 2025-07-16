@@ -13,6 +13,7 @@ import { Server } from "socket.io";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import { AppDataSource } from "./data-source";
 
 dotenv.config();
 
@@ -97,6 +98,14 @@ async function startServer() {
       socket.broadcast.emit("user-offline", userId);
     });
   });
+  AppDataSource.initialize()
+  .then(() => {
+    console.log(" TypeORM Data Source has been initialized!");
+    startServer(); // your existing function
+  })
+  .catch((err) => {
+    console.error(" Error during Data Source initialization:", err);
+  });  
 
   httpServer.listen(PORT, () => {
     console.log(`🚀 GraphQL ready at http://localhost:${PORT}/graphql`);

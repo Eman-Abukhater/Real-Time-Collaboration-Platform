@@ -22,22 +22,22 @@ export const resolvers = {
 
   Mutation: {
     register: async (_: any, { username, email, password }: any) => {
-      const existing = users.find(u => u.email === email);
+      const existing = await userRepo.findOneBy({ email });
       if (existing) throw new Error("User already exists");
-
+    
       const hashedPassword = await bcrypt.hash(password, 10);
-      const newUser: User = {
-        id: uuidv4(),
+    
+      const newUser = userRepo.create({
         username,
         email,
         password: hashedPassword,
-        role:  "Admin"
-      };
-
-      users.push(newUser);
-
+        role: "User", // or "Admin" if needed
+      });
+    
+      await userRepo.save(newUser);
+    
       const token = jwt.sign({ userId: newUser.id }, SECRET, { expiresIn: "1d" });
-
+    
       return {
         token,
         user: {
@@ -48,6 +48,7 @@ export const resolvers = {
         }
       };
     },
+    
 
     login: async (_: any, { email, password }: any) => {
       const user = users.find(u => u.email === email);

@@ -11,9 +11,11 @@ const userRepo = AppDataSource.getRepository(User);
 export const resolvers = {
   Query: {
     hello: () => "Hello from GraphQL 🚀",
-    me: (_: any, __: any, context: any) => {
-      return context.user || null;
+    me: async (_: any, __: any, context: any) => {
+      if (!context.user) return null;
+      return await userRepo.findOneBy({ id: context.user.id });
     },
+    
     adminSecret: (_: any, __: any, context: any) => {
         requireRole(context.user, ["Admin"]); //Only Admins allowed
         return "🎉 This is top-secret admin content!";
@@ -51,14 +53,14 @@ export const resolvers = {
     
 
     login: async (_: any, { email, password }: any) => {
-      const user = users.find(u => u.email === email);
+      const user = await userRepo.findOneBy({ email });
       if (!user) throw new Error("User not found");
-
+    
       const valid = await bcrypt.compare(password, user.password);
       if (!valid) throw new Error("Invalid password");
-
+    
       const token = jwt.sign({ userId: user.id }, SECRET, { expiresIn: "1d" });
-
+    
       return {
         token,
         user: {
@@ -68,21 +70,23 @@ export const resolvers = {
           role: user.role
         }
       };
-    }
-    ,
+    },
+    
     // Add the uploadAvatar mutation
-    uploadAvatar: (_: any, { userId, avatarUrl }: any, context: any) => {
-        if (!context.user || context.user.id !== userId) {
-          throw new Error("Unauthorized");
-        }
-      
-        const user = users.find((u) => u.id === userId);
-        if (!user) throw new Error("User not found");
-      
-        user.avatarUrl = avatarUrl;
-        return user;
-      },
-  },
+    uploadAvatar: async (_: any, { userId, avatarUrl }: any, context: any) => {
+      if (!context.user || context.user.id !== userId) {
+        throw new Error("Unauthorized");
+      }
+    
+      const user = await userRepo.findOneBy({ id: userId });
+      if (!user) throw new Error("User not found");
+    
+      user.avatarUrl = avatarUrl;
+      await userRepo.save(user);
+    
+      return user;
+    },
+    
     
       
 };

@@ -38,8 +38,6 @@ function getUserIdFromToken(): string | null {
 }
 const userId = getUserIdFromToken();
 
-
-
 export default function Chat() {
   const { data } = useQuery(MESSAGES);
   const [message, setMessage] = useState("");
@@ -68,6 +66,9 @@ export default function Chat() {
       setTypingUser(`${username} is typing...`);
       setTimeout(() => setTypingUser(null), 2000);
     });
+    if (userId) {
+      socket.emit("userOnline", userId);
+    }
 
     return () => {
       socket.off("chat message");
@@ -121,13 +122,11 @@ export default function Chat() {
           value={message}
           onChange={(e) => {
             setMessage(e.target.value);
-
             if (userId) socket.emit("typing", userId);
-
             clearTimeout(typingTimeout);
             typingTimeout = setTimeout(() => {
-              socket.emit("stop typing", localStorage.getItem("userId"));
-            }, 1500); // stops after 1.5s of no typing
+              if (userId) socket.emit("stop typing", userId);
+            }, 1500);
           }}
           placeholder="Type a message"
         />

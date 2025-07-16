@@ -14,11 +14,14 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { AppDataSource } from "./data-source";
+import { Message } from "./entities/Message";
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 4000;
+const messageRepo = AppDataSource.getRepository(Message);
+const userRepo = AppDataSource.getRepository(User);
 
 // Create uploads folder if not exists
 const uploadsPath = path.join(__dirname, "../uploads");
@@ -32,7 +35,7 @@ const storage = multer.diskStorage({
   filename: (_, file, cb) => {
     const uniqueName = `${Date.now()}-${file.originalname}`;
     cb(null, uniqueName);
-  }
+  },
 });
 const upload = multer({ storage });
 
@@ -42,9 +45,8 @@ app.use("/uploads", express.static(uploadsPath));
 // Create HTTP server
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
-  cors: { origin: "*" }
+  cors: { origin: "*" },
 });
-
 
 async function startServer() {
   const server = new ApolloServer({ typeDefs, resolvers });
@@ -53,23 +55,28 @@ async function startServer() {
   app.use(cors());
   app.use(json());
 
-  app.use("/graphql", expressMiddleware(server, {
-    context: async ({ req }) => {
-      const token = req.headers.authorization?.split(" ")[1];
-      let user = null;
+  app.use(
+    "/graphql",
+    expressMiddleware(server, {
+      context: async ({ req }) => {
+        const token = req.headers.authorization?.split(" ")[1];
+        let user = null;
 
-      if (token) {
-        try {
-          const decoded = jwt.verify(token, "supersecretkey") as { userId: string };
-          user = users.find(u => u.id === decoded.userId) || null;
-        } catch (err) {
-          user = null;
+        if (token) {
+          try {
+            const decoded = jwt.verify(token, "supersecretkey") as {
+              userId: string;
+            };
+            user = users.find((u) => u.id === decoded.userId) || null;
+          } catch (err) {
+            user = null;
+          }
         }
-      }
 
-      return { user };
-    }
-  }));
+        return { user };
+      },
+    })
+  );
 
   app.post("/upload", upload.single("file"), (req, res) => {
     if (!req.file) {
@@ -91,7 +98,21 @@ async function startServer() {
       console.log(`✍️ ${fromUserId} is typing...`);
       socket.broadcast.emit("typing", fromUserId);
     });
+    socket.on("chat message", async (rawMsg: string) => {
+      const userId = socket.handshake.query.userId as string;
+      const user = await userRepo.findOneBy({ id: userId });
+      if (!user) return;
 
+      const msg = messageRepo.create({
+        content: rawMsg,
+        sender: user,
+      });
+
+      await messageRepo.save(msg);
+
+      // Emit to all users
+      io.emit("chat message", `[${user.username}] ${rawMsg}`);
+    });
     socket.on("disconnect", () => {
       console.log(` User ${userId} disconnected`);
       socket.broadcast.emit("user-offline", userId);
@@ -108,10 +129,8 @@ async function startServer() {
 AppDataSource.initialize()
   .then(() => {
     console.log(" TypeORM Data Source has been initialized!");
-    startServer(); 
+    startServer();
   })
   .catch((err) => {
     console.error("Error during Data Source initialization:", err);
   });
-
-

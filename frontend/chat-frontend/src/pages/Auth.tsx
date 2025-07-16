@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button, TextField, Box, Typography, Paper } from "@mui/material";
 import { gql, useMutation } from "@apollo/client";
 import { useNavigate } from "react-router-dom";
+import socket from "../socket"; 
 const REGISTER = gql`
   mutation Register($username: String!, $email: String!, $password: String!) {
     register(username: $username, email: $email, password: $password) {
@@ -46,12 +47,33 @@ export default function Auth() {
         const { data } = await login({
           variables: { email: form.email, password: form.password },
         });
+  
         localStorage.setItem("token", data.login.token);
-        navigate("/chat");
+        localStorage.setItem("userId", data.login.user.id); // ✅ Save userId
+        navigate("/chat"); // Redirect to chat page after login
+  
+        // ✅ Reconnect socket with new userId
+
+        socket.disconnect(); // disconnect old socket
+        socket.io.opts.query = {
+          userId: localStorage.getItem("userId") || "", // set new userId
+        };
+        socket.connect(); // reconnect with new userId
+        
+  
       } else {
         const { data } = await register({ variables: form });
+  
         localStorage.setItem("token", data.register.token);
-        alert("Registration successful");
+        localStorage.setItem("userId", data.register.user.id); // ✅ Save userId
+  
+        // ✅ Reconnect socket with new userId
+        socket.disconnect();
+        socket.io.opts.query = {
+          userId: localStorage.getItem("userId") || "",
+        };
+        socket.connect();
+  
       }
     } catch (err: unknown) {
       if (err instanceof Error) {

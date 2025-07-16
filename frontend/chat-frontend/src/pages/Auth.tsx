@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button, TextField, Box, Typography, Paper } from "@mui/material";
 import { gql, useMutation } from "@apollo/client";
-
+import { useNavigate } from "react-router-dom";
 const REGISTER = gql`
   mutation Register($username: String!, $email: String!, $password: String!) {
     register(username: $username, email: $email, password: $password) {
@@ -29,6 +29,7 @@ const LOGIN = gql`
 `;
 
 export default function Auth() {
+  const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
   const [form, setForm] = useState({ username: "", email: "", password: "" });
 
@@ -46,7 +47,7 @@ export default function Auth() {
           variables: { email: form.email, password: form.password },
         });
         localStorage.setItem("token", data.login.token);
-        alert("Login successful");
+        navigate("/chat");
       } else {
         const { data } = await register({ variables: form });
         localStorage.setItem("token", data.register.token);
@@ -102,9 +103,15 @@ export default function Auth() {
           fullWidth
           sx={{ mt: 2 }}
           onClick={handleSubmit}
+          disabled={
+            isLogin
+              ? !(form.email && form.password)
+              : !(form.username && form.email && form.password)
+          }
         >
           {isLogin ? "Login" : "Register"}
         </Button>
+
         <Button
           color="secondary"
           fullWidth

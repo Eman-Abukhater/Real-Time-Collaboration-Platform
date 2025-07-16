@@ -23,6 +23,18 @@ export const typeDefs = gql`
   register(username: String!, email: String!, password: String!): AuthPayload!
   login(email: String!, password: String!): AuthPayload!
   uploadAvatar(userId: ID!, avatarUrl: String!): User! # ✅ Add this
+
 }
+type Message {
+  id: ID!
+  content: String!
+  createdAt: String!
+  sender: User!
+}
+
+extend type Query {
+  messages: [Message!]!
+}
+
 
 `;

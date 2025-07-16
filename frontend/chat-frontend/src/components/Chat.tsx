@@ -73,6 +73,7 @@ export default function Chat() {
       socket.off("chat message");
       socket.off("typing");
       socket.off("stop typing");
+      clearTimeout(typingTimeout);
     };
   }, []);
 

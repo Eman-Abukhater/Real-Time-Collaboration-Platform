@@ -66,5 +66,18 @@ export const resolvers = {
         }
       };
     }
-  }
+  },
+    // Add the uploadAvatar mutation
+    uploadAvatar: (_: any, { userId, avatarUrl }: any, context: any) => {
+        if (!context.user || context.user.id !== userId) {
+          throw new Error("Unauthorized");
+        }
+      
+        const user = users.find((u) => u.id === userId);
+        if (!user) throw new Error("User not found");
+      
+        user.avatarUrl = avatarUrl;
+        return user;
+      },
+      
 };

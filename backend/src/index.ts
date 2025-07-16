@@ -45,6 +45,7 @@ const io = new Server(httpServer, {
   cors: { origin: "*" }
 });
 
+
 async function startServer() {
   const server = new ApolloServer({ typeDefs, resolvers });
   await server.start();
@@ -70,7 +71,6 @@ async function startServer() {
     }
   }));
 
-  // File upload endpoint
   app.post("/upload", upload.single("file"), (req, res) => {
     if (!req.file) {
       return res.status(400).json({ error: "No file uploaded" });
@@ -81,7 +81,6 @@ async function startServer() {
     });
   });
 
-  // Socket.IO logic
   io.on("connection", (socket) => {
     const userId = socket.handshake.query.userId as string;
     console.log(`User ${userId} connected with socket ID: ${socket.id}`);
@@ -98,19 +97,21 @@ async function startServer() {
       socket.broadcast.emit("user-offline", userId);
     });
   });
-  AppDataSource.initialize()
-  .then(() => {
-    console.log(" TypeORM Data Source has been initialized!");
-    startServer(); // your existing function
-  })
-  .catch((err) => {
-    console.error(" Error during Data Source initialization:", err);
-  });  
 
   httpServer.listen(PORT, () => {
-    console.log(`🚀 GraphQL ready at http://localhost:${PORT}/graphql`);
-    console.log(`💬 Socket.IO running on port ${PORT}`);
+    console.log(` GraphQL ready at http://localhost:${PORT}/graphql`);
+    console.log(` Socket.IO running on port ${PORT}`);
   });
 }
 
-startServer();
+// FIRST initialize database THEN start server
+AppDataSource.initialize()
+  .then(() => {
+    console.log(" TypeORM Data Source has been initialized!");
+    startServer(); 
+  })
+  .catch((err) => {
+    console.error("Error during Data Source initialization:", err);
+  });
+
+

@@ -3,6 +3,7 @@ import { AppDataSource } from "../data-source";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { requireRole } from "../utils/auth";
+import { Message } from "../entities/Message";
 
 const SECRET = "supersecretkey";
 const userRepo = AppDataSource.getRepository(User);
@@ -85,5 +86,12 @@ export const resolvers = {
 
       return user;
     },
+
+    messages: async () => {
+      return await AppDataSource.getRepository(Message).find({
+        relations: ["sender"],
+        order: { createdAt: "ASC" }
+      });
+    }
   },
 };

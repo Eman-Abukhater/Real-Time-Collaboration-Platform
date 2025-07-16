@@ -66,7 +66,7 @@ export const resolvers = {
         }
       };
     }
-  },
+    ,
     // Add the uploadAvatar mutation
     uploadAvatar: (_: any, { userId, avatarUrl }: any, context: any) => {
         if (!context.user || context.user.id !== userId) {
@@ -79,5 +79,7 @@ export const resolvers = {
         user.avatarUrl = avatarUrl;
         return user;
       },
+  },
+    
       
 };

@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Button, TextField, Box, Typography, Paper } from "@mui/material";
+import { Button, TextField, Box, Typography, Paper, Alert } from "@mui/material";
 import { gql, useMutation } from "@apollo/client";
 import { useNavigate } from "react-router-dom";
-import { connectSocket } from "../socket"; // ✅ use this only
+import { connectSocket } from "../socket";
+import { ApolloError } from "@apollo/client"; // Importing ApolloError type
 
 const REGISTER = gql`
   mutation Register($username: String!, $email: String!, $password: String!) {
@@ -34,16 +35,22 @@ export default function Auth() {
   const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
   const [form, setForm] = useState({ username: "", email: "", password: "" });
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const [register] = useMutation(REGISTER);
   const [login] = useMutation(LOGIN);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+    setErrorMessage(null); // Clear errors on change
   };
 
   const handleSubmit = async () => {
     try {
+      setErrorMessage(null);
+      setSuccessMessage(null);
+
       if (isLogin) {
         const { data } = await login({
           variables: { email: form.email, password: form.password },
@@ -55,26 +62,22 @@ export default function Auth() {
         localStorage.setItem("token", token);
         localStorage.setItem("userId", userId);
 
-        connectSocket(userId); // ✅ Connect with userId
+        connectSocket(userId);
         navigate("/chat");
-
       } else {
-        const { data } = await register({ variables: form });
+        await register({ variables: form });
 
-        const token = data.register.token;
-        const userId = data.register.user.id;
-
-        localStorage.setItem("token", token);
-        localStorage.setItem("userId", userId);
-
-        connectSocket(userId); // ✅ Connect with userId
-        navigate("/chat");
+        setSuccessMessage("Registration successful! Please log in.");
+        setIsLogin(true); // Switch to login mode
+        setForm({ username: "", email: "", password: "" }); // Clear form
       }
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        console.error(err.message);
+    } catch (err) {
+      if (err instanceof ApolloError) {
+        setErrorMessage(err.message); // ApolloError-specific handling
+      } else if (err instanceof Error) {
+        setErrorMessage(err.message); // General error handling
       } else {
-        console.error("Unknown error occurred");
+        setErrorMessage("An unknown error occurred.");
       }
     }
   };
@@ -86,6 +89,18 @@ export default function Auth() {
           {isLogin ? "Login" : "Register"}
         </Typography>
 
+        {errorMessage && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {errorMessage}
+          </Alert>
+        )}
+
+        {successMessage && (
+          <Alert severity="success" sx={{ mb: 2 }}>
+            {successMessage}
+          </Alert>
+        )}
+
         {!isLogin && (
           <TextField
             name="username"
@@ -93,6 +108,7 @@ export default function Auth() {
             fullWidth
             margin="normal"
             onChange={handleChange}
+            value={form.username}
           />
         )}
 
@@ -102,6 +118,7 @@ export default function Auth() {
           fullWidth
           margin="normal"
           onChange={handleChange}
+          value={form.email}
         />
 
         <TextField
@@ -111,6 +128,7 @@ export default function Auth() {
           fullWidth
           margin="normal"
           onChange={handleChange}
+          value={form.password}
         />
 
         <Button
@@ -132,7 +150,11 @@ export default function Auth() {
           color="secondary"
           fullWidth
           sx={{ mt: 1 }}
-          onClick={() => setIsLogin(!isLogin)}
+          onClick={() => {
+            setIsLogin(!isLogin);
+            setErrorMessage(null);
+            setSuccessMessage(null);
+          }}
         >
           {isLogin ? "Need to register?" : "Already have an account?"}
         </Button>

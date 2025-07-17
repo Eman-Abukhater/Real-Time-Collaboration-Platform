@@ -19,6 +19,8 @@ import { User } from "./entities/UserEntity";
 import session from "express-session";
 import connectRedis from "connect-redis";
 import { redis } from "./config/redis";
+import fileRoutes from "./routes/fileRoutes";
+
 dotenv.config();
 
 const app = express();
@@ -80,16 +82,22 @@ async function startServer() {
       },
     })
   );
+  app.use("/files", express.static(path.join(__dirname, "../uploads")));
 
-  app.post("/upload", upload.single("file"), (req, res) => {
-    if (!req.file) {
-      return res.status(400).json({ error: "No file uploaded" });
-    }
-    return res.status(200).json({
-      message: "File uploaded successfully",
-      avatarUrl: `/uploads/${req.file.filename}`,
-    });
+app.use(express.json());
+app.use("/api", fileRoutes);
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+
+app.post("/upload", upload.single("file"), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: "No file uploaded" });
+  }
+  res.status(200).json({
+    message: "File uploaded successfully",
+    avatarUrl: `/uploads/${req.file.filename}`,
   });
+});
+
 
   io.on("connection", (socket) => {
     const userId = socket.handshake.query.userId as string;

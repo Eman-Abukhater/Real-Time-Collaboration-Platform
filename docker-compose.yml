@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: collabdb
+    ports:
+      - "5433:5432"  # Host port 5433, container port 5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - backend
+
+  redis:
+    image: redis:7
+    ports:
+      - "6380:6379"  # Host port 6380, container port 6379
+    volumes:
+      - redis_data:/data
+    networks:
+      - backend
+
+  backend:
+    build: .
+    ports:
+      - "4000:4000"
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      # Update the backend connection URLs based on the Docker container ports
+      - DATABASE_URL=postgres://admin:secret@postgres:5432/collabdb  # Connects to PostgreSQL container on port 5432
+      - REDIS_URL=redis://redis:6379  # Connects to Redis container on port 6379
+    networks:
+      - backend
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  backend:
+    driver: bridge

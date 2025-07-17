@@ -1,22 +1,15 @@
-import { io } from "socket.io-client";
+import { io, Socket } from "socket.io-client";
 
-// Helper function to decode token
-function getUserIdFromToken(): string | null {
-  const token = localStorage.getItem("token");
-  if (!token) return null;
+let socket: Socket | null = null;
 
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    return payload.userId || null;
-  } catch {
-    return null;
-  }
-}
+export const connectSocket = (userId: string) => {
+  if (socket) socket.disconnect(); // Close old socket if exists
 
-const userId = getUserIdFromToken();
+  socket = io("http://localhost:4000", {
+    query: { userId },
+  });
 
-const socket = io("http://localhost:4000", {
-  query: { userId }, 
-});
+  return socket;
+};
 
-export default socket;
+export const getSocket = () => socket;

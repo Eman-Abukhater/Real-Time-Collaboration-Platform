@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Button, TextField, Box, Typography, Paper } from "@mui/material";
 import { gql, useMutation } from "@apollo/client";
 import { useNavigate } from "react-router-dom";
-import socket from "../socket"; 
+import { connectSocket } from "../socket"; // ✅ use this only
+
 const REGISTER = gql`
   mutation Register($username: String!, $email: String!, $password: String!) {
     register(username: $username, email: $email, password: $password) {
@@ -47,33 +48,27 @@ export default function Auth() {
         const { data } = await login({
           variables: { email: form.email, password: form.password },
         });
-  
-        localStorage.setItem("token", data.login.token);
-        localStorage.setItem("userId", data.login.user.id); // ✅ Save userId
-        navigate("/chat"); // Redirect to chat page after login
-  
-        // ✅ Reconnect socket with new userId
 
-        socket.disconnect(); // disconnect old socket
-        socket.io.opts.query = {
-          userId: localStorage.getItem("userId") || "", // set new userId
-        };
-        socket.connect(); // reconnect with new userId
-        
-  
+        const token = data.login.token;
+        const userId = data.login.user.id;
+
+        localStorage.setItem("token", token);
+        localStorage.setItem("userId", userId);
+
+        connectSocket(userId); // ✅ Connect with userId
+        navigate("/chat");
+
       } else {
         const { data } = await register({ variables: form });
-  
-        localStorage.setItem("token", data.register.token);
-        localStorage.setItem("userId", data.register.user.id); // ✅ Save userId
-  
-        // ✅ Reconnect socket with new userId
-        socket.disconnect();
-        socket.io.opts.query = {
-          userId: localStorage.getItem("userId") || "",
-        };
-        socket.connect();
-  
+
+        const token = data.register.token;
+        const userId = data.register.user.id;
+
+        localStorage.setItem("token", token);
+        localStorage.setItem("userId", userId);
+
+        connectSocket(userId); // ✅ Connect with userId
+        navigate("/chat");
       }
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -85,16 +80,12 @@ export default function Auth() {
   };
 
   return (
-    <Box
-      display="flex"
-      justifyContent="center"
-      alignItems="center"
-      minHeight="100vh"
-    >
+    <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
       <Paper elevation={4} sx={{ padding: 4, width: 400 }}>
         <Typography variant="h5" textAlign="center" gutterBottom>
           {isLogin ? "Login" : "Register"}
         </Typography>
+
         {!isLogin && (
           <TextField
             name="username"
@@ -104,6 +95,7 @@ export default function Auth() {
             onChange={handleChange}
           />
         )}
+
         <TextField
           name="email"
           label="Email"
@@ -111,6 +103,7 @@ export default function Auth() {
           margin="normal"
           onChange={handleChange}
         />
+
         <TextField
           name="password"
           label="Password"
@@ -119,6 +112,7 @@ export default function Auth() {
           margin="normal"
           onChange={handleChange}
         />
+
         <Button
           variant="contained"
           color="primary"

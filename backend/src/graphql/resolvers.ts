@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { requireRole } from "../utils/auth";
 import { Message } from "../entities/Message";
+import { checkRateLimit } from "../utils/rateLimiter";
 
 const SECRET = "supersecretkey";
 const userRepo = AppDataSource.getRepository(User);
@@ -60,14 +61,15 @@ export const resolvers = {
     },
 
     login: async (_: any, { email, password }: any) => {
+      await checkRateLimit(`login:${email}`, 5, 60); // ⏱️ max 5 logins per 60 seconds
       const user = await userRepo.findOneBy({ email });
       if (!user) throw new Error("User not found");
-
+    
       const valid = await bcrypt.compare(password, user.password);
       if (!valid) throw new Error("Invalid password");
-
+    
       const token = jwt.sign({ userId: user.id }, SECRET, { expiresIn: "1d" });
-
+    
       return {
         token,
         user: {
@@ -78,6 +80,7 @@ export const resolvers = {
         },
       };
     },
+    
 
     uploadAvatar: async (_: any, { userId, avatarUrl }: any, context: any) => {
       if (!context.user || context.user.id !== userId) {

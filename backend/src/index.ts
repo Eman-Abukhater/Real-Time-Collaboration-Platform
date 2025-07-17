@@ -16,7 +16,7 @@ import fs from "fs";
 import { AppDataSource } from "./data-source";
 import { Message } from "./entities/Message";
 import { User } from "./entities/UserEntity";
-
+import { graphqlUploadExpress } from "graphql-upload";
 dotenv.config();
 
 const app = express();

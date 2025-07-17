@@ -16,9 +16,6 @@ import fs from "fs";
 import { AppDataSource } from "./data-source";
 import { Message } from "./entities/Message";
 import { User } from "./entities/UserEntity";
-import session from "express-session";
-import connectRedis from "connect-redis";
-import { redis } from "./config/redis";
 import fileRoutes from "./routes/fileRoutes";
 
 dotenv.config();

@@ -6,4 +6,6 @@ export const redis = createClient({
 });
 
 redis.on('error', (err) => console.error('Redis error:', err));
-await redis.connect(); // top-level in entry point or async function
+(async () => {
+  await redis.connect();
+})(); // top-level in entry point or async function
